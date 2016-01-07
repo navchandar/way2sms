@@ -36,7 +36,7 @@ user_number=raw_input("Please enter the username for way2sms.com ")
 password_=raw_input('please enter the password ')
 payload={
 	'username':user_number,
-	'password':password_
+	'password':password
 }
 
 # print p.cookies

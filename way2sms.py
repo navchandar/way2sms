@@ -1,62 +1,71 @@
 import requests
-import pdb
+import random
+import time
+import randomheader
 
-#Way2SMS Text message
-def send_msg(jsession_id):
-    print ("Login successful !")
-    
-    number = int(input("Please enter the number to whom you want to send the message : +91 "))
-    msg = input("Enter the message of 160 characters to send :")
-    while len(msg)>160:
-        msg = input("Enter the message of 160 characters to send :")
-    
+
+def send_msg(jsession_id, msg, smsnumber):
     toke = jsession_id[4:]
-    header={
-    'Host':'site21.way2sms.com',
-    'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0',
-    'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language':'en-US,en;q=0.5',
-    'Accept-Encoding':' gzip, deflate',
-    'Referer':'http://site21.way2sms.com/sendSMS?Token='+toke,
-    'Connection':'keep-alive',
-    'Content-Type':'application/x-www-form-urlencoded',
-    'Content-Length':'105'
-    }
-    
-    cookie=dict( _ga='GA1.2.1259803070.1448989082', __gads='ID=2f1b44c88b3b95b7:T=1448989082:S=ALNI_MaipwWyw2hUU0fylEPb_gxGhuABig',JSESSIONID=jsession_id,_gat='1')
-    payload={
-        'ssaction':'ss','Token':toke,'mobile':number,'message':msg,'msgLen':len(msg)
-    }
-    
+    header = randomheader.header()
+    header.update({
+        'Host': 'site21.way2sms.com',
+        'Accept-Encoding': 'gzip, deflate, sdch',
+        'Referer': 'http://site21.way2sms.com/sendSMS?Token=' + toke,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'})
+
+    cookie = dict(_ga='GA1.2.1259803070.1448989082', __gads='ID=2f1b44c88b3b95b7:T=1448989082:S=ALNI_MaipwWyw2hUU0fylEPb_gxGhuABig', JSESSIONID=jsession_id, _gat='1')
+    payload = {'ssaction': 'ss', 'Token': toke, 'mobile': smsnumber, 'message': msg, 'msgLen': len(msg)}
+
     url1 = "http://site21.way2sms.com/smstoss.action"
-    r1 = requests.post(url1,headers=header,cookies=cookie,data=payload)
+    r1 = requests.post(url1, headers=header, cookies=cookie, data=payload)
     if r1.status_code == 200:
-        print ("Message sent.")
+        if ('finished your day quota' in str(r1.content)):
+            print('Message not sent. Day Quota is completed.')
+            return False
+        else:
+            print("Message sent to : %s \n" % (smsnumber))
+            return True
     else:
-        print ("Message not sent. Please try after some time.")
+        print("Message not sent. Try after some time.")
+        return False
 
-url = "http://site21.way2sms.com/Login1.action"
 
-user_number = input("Please enter the username: + 91")
-password = input("Please enter the password: ")
+def send(Text, smsnumber):
+    # Way2Sms credentials
+    user_number = str(input("Please enter the username: + 91"))
+    password = str(input("Please enter the password: "))
 
-payload={
-	'username':user_number,
-	'password':password
-}
+    url = "http://site21.way2sms.com/Login1.action"
 
-# print p.cookies
-session=requests.Session()
-print ("Please wait while we are login in website...")
-try:
-    r = session.post(url,data=payload)
-    cj = session.cookies
-    # print r.content.decode('ISO-8859-1').encode('utf8')
-    session_id = requests.utils.dict_from_cookiejar(cj)
-    f_session_id = session_id['JSESSIONID']
-    rrr = f_session_id
-    send_msg(rrr)
+    # limit the character length
+    msg = (Text)[0:160]
 
-except Exception as e:
-    print ('Error : \n', e)
-    print ("\nWrong password(Check your password or try after sometime)\n or Issue with the website! Kindly try after some time.")
+    payload = {
+        'username': user_number,
+        'password': password
+    }
+
+    session = requests.Session()
+    # Randomly sleep for some time ;)
+    time.sleep(random.uniform(1, 5))
+
+    try:
+        r = session.post(url, data=payload)
+        cj = session.cookies
+        # print (r.content.decode('ISO-8859-1').encode('utf8'))
+        session_id = requests.utils.dict_from_cookiejar(cj)
+        f_session_id = session_id['JSESSIONID']
+        rrr = f_session_id
+        _b = send_msg(rrr, msg, smsnumber)
+        if _b is True:
+            return True
+        elif _b is False:
+            return False
+
+    except Exception as e:
+        print('Message not sent. Error logging in to SMS vendor: \n', e)
+    return False
+
+
+if __name__ == '__main__':
+    send('Test message from Way2Sms', '97812345678')
